@@ -387,6 +387,7 @@ def normalize_account_holder_name(value: Optional[str]) -> Optional[str]:
 
 def normalize_address_ocr_noise(value: str) -> str:
     normalized = normalize_cyrillic_lookalikes(normalize_whitespace(value))
+    normalized = re.sub(r"\b(ул|кв)\s+\.", r"\1.", normalized, flags=re.IGNORECASE)
     normalized = re.sub(r"\bд\s+ом\b", "дом", normalized, flags=re.IGNORECASE)
     normalized = re.sub(r"\bк\s+в\b", "кв", normalized, flags=re.IGNORECASE)
     normalized = re.sub(r"\bк\s+\.\s*(?=\d)", "к. ", normalized, flags=re.IGNORECASE)
