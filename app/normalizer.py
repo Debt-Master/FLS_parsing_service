@@ -30,11 +30,9 @@ def _serialize_decimal(v: Any) -> Any:
 def normalize(result: dict[str, Any], source_filename: str = "input.rtf") -> dict[str, Any]:
     """Convert FLS result dict to unified parsed_document format."""
     address = result.get("address", {}) or {}
-
     persons = []
     if result.get("account_holder_name"):
         persons.append({
-            "role": "owner",
             "full_name": result["account_holder_name"],
             **_split_name(result["account_holder_name"]),
             "birthday_date": None,
@@ -46,6 +44,7 @@ def normalize(result: dict[str, Any], source_filename: str = "input.rtf") -> dic
     return _serialize_decimal({
         "document_type": "fls",
         "source_filename": result.get("source_filename", source_filename),
+        "account_holder_name": result.get("account_holder_name"),
         "address_raw": result.get("address_raw"),
         "address": {
             "raw": address.get("raw") or address.get("full"),
@@ -67,6 +66,7 @@ def normalize(result: dict[str, Any], source_filename: str = "input.rtf") -> dic
         },
         "validations": result.get("validations"),
         "metadata": {
+            "account_holder_name": result.get("account_holder_name"),
             "parsing": result.get("parsing"),
         },
     })

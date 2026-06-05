@@ -3,6 +3,7 @@
 
 import unittest
 
+from app.normalizer import normalize
 from app.parser import _extract_header_fields, normalize_account_holder_name, parse_address
 
 
@@ -78,6 +79,37 @@ class NormalizeAccountHolderNameTests(unittest.TestCase):
         self.assertEqual(
             normalize_account_holder_name("Мороз Анна Ан атольевна"),
             "Мороз Анна Анатольевна",
+        )
+
+
+class NormalizeFlsResultTests(unittest.TestCase):
+    def test_account_holder_person_has_no_role(self) -> None:
+        result = normalize(
+            {
+                "source_filename": "statement.rtf",
+                "account_holder_name": "Константинов Николай Алексеевич",
+                "address": {"full": "ул. Подольская, дом № 17, кв. 57"},
+                "charges": [],
+                "year_totals": [],
+                "grand_total": {},
+                "validations": {},
+                "parsing": {},
+            }
+        )
+
+        self.assertEqual(len(result["persons"]), 1)
+        self.assertNotIn("role", result["persons"][0])
+        self.assertEqual(
+            result["persons"][0]["full_name"],
+            "Константинов Николай Алексеевич",
+        )
+        self.assertEqual(
+            result["account_holder_name"],
+            "Константинов Николай Алексеевич",
+        )
+        self.assertEqual(
+            result["metadata"]["account_holder_name"],
+            "Константинов Николай Алексеевич",
         )
 
 
