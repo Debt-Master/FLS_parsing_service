@@ -430,7 +430,10 @@ def normalize_street(value: str) -> str:
     street = re.sub(r"^uл\.\s+", "ул. ", street, flags=re.IGNORECASE)
     street = street.rstrip(":;,")
     street = re.sub(r"\bул\s+\.", "ул.", street, flags=re.IGNORECASE)
-    street = re.sub(r"\bбульв\.?\b", "бульвар", street, flags=re.IGNORECASE)
+    # RTF exports may separate the abbreviation punctuation into its own token
+    # (``бульв .``). Normalize the whole suffix so it does not leak a trailing
+    # dot into the persisted address and prevent matching the EGD address.
+    street = re.sub(r"\bбульв\s*\.?", "бульвар", street, flags=re.IGNORECASE)
     street = re.sub(r"^ул\.\s+(.+?)\s+бульвар$", r"б-р \1", street, flags=re.IGNORECASE)
     street = re.sub(r"^ул\.\s+(.+?)\s+просп\.?$", r"пр-кт \1", street, flags=re.IGNORECASE)
     patterns = (
@@ -644,7 +647,10 @@ def _normalize_table_tokens(tokens: List[str]) -> List[str]:
     normalized: List[str] = []
     idx = 0
     while idx < len(tokens):
-        if idx + 1 < len(tokens) and tokens[idx] == "Всег" and tokens[idx + 1] == "о":
+        if (
+            idx + 1 < len(tokens)
+            and f"{tokens[idx]}{tokens[idx + 1]}" == "Всего"
+        ):
             normalized.append("Всего")
             idx += 2
             continue

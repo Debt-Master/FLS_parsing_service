@@ -4,10 +4,66 @@
 import unittest
 
 from app.normalizer import normalize
-from app.parser import _extract_header_fields, normalize_account_holder_name, parse_address
+from app.parser import (
+    _extract_header_fields,
+    _normalize_table_tokens,
+    normalize_account_holder_name,
+    parse_address,
+)
+
+
+class NormalizeTableTokensTests(unittest.TestCase):
+    def test_restores_grand_total_split_after_first_syllable(self) -> None:
+        self.assertEqual(
+            _normalize_table_tokens(["Вс", "его", "100,00"]),
+            ["Всего", "100,00"],
+        )
+
+    def test_restores_grand_total_split_before_last_letter(self) -> None:
+        self.assertEqual(
+            _normalize_table_tokens(["Всег", "о", "100,00"]),
+            ["Всего", "100,00"],
+        )
+
+
+class NormalizerAddressTests(unittest.TestCase):
+    def test_callback_address_uses_same_public_boulevard_form_as_egd(self) -> None:
+        payload = normalize(
+            {
+                "address": {
+                    "raw": "Новочеркасский бульв ., дом 11, кв. 46",
+                    "street": "б-р Новочеркасский",
+                    "house": "11",
+                    "building": None,
+                    "structure": None,
+                    "apartment": "46",
+                    "full": "б-р Новочеркасский, дом № 11, кв. 46",
+                }
+            }
+        )
+
+        expected = "Новочеркасский бульвар, дом № 11, кв. 46"
+        self.assertEqual(payload["address"]["street"], "Новочеркасский бульвар")
+        self.assertEqual(payload["address"]["full"], expected)
+        self.assertEqual(payload["address"]["raw"], expected)
+
+    def test_keeps_legacy_full_address_when_structured_parts_are_absent(self) -> None:
+        payload = normalize(
+            {"address": {"raw": "неразобранный адрес", "full": "неразобранный адрес"}}
+        )
+
+        self.assertEqual(payload["address"]["raw"], "неразобранный адрес")
+        self.assertEqual(payload["address"]["full"], "неразобранный адрес")
 
 
 class ParseAddressTests(unittest.TestCase):
+    def test_normalizes_boulevard_with_detached_dot(self) -> None:
+        result = parse_address("Новочеркасский бульв ., дом 11, кв. 46")
+
+        self.assertEqual(result["street"], "б-р Новочеркасский")
+        self.assertEqual(result["house"], "11")
+        self.assertEqual(result["apartment"], "46")
+
     def test_preserves_apartment_when_abbreviation_has_space_before_dot(self) -> None:
         result = parse_address("Донецкая ул., дом 22, кв . 1")
 
